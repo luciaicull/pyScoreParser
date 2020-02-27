@@ -101,18 +101,22 @@ class PairDataset:
 
         for pair_data in tqdm(self.data_pairs):
             formatted_data = dict()
-            formatted_data['input_data'], formatted_data['output_data'] = convert_feature_to_VirtuosoNet_format(pair_data.features, self.feature_stats)
-            for key in VNET_COPY_DATA_KEYS:
-                formatted_data[key] = pair_data.features[key]
-            formatted_data['graph'] = pair_data.graph_edges
-            formatted_data['score_path'] = pair_data.piece_path
-            formatted_data['perform_path'] = pair_data.perform_path
+            try:
+                formatted_data['input_data'], formatted_data['output_data'] = convert_feature_to_VirtuosoNet_format(pair_data.features, self.feature_stats)
+                for key in VNET_COPY_DATA_KEYS:
+                    formatted_data[key] = pair_data.features[key]
+                formatted_data['graph'] = pair_data.graph_edges
+                formatted_data['score_path'] = pair_data.piece_path
+                formatted_data['perform_path'] = pair_data.perform_path
 
-            save_name = _flatten_path(
-                Path(pair_data.perform_path).relative_to(Path(self.dataset_path))) + '.dat'
-           
-            with open(save_folder / pair_data.split_type / save_name, "wb") as f:
-                pickle.dump(formatted_data, f, protocol=2)
+                save_name = _flatten_path(
+                    Path(pair_data.perform_path).relative_to(Path(self.dataset_path))) + '.dat'
+            
+                with open(save_folder / pair_data.split_type / save_name, "wb") as f:
+                    pickle.dump(formatted_data, f, protocol=2)
+            except:
+                print('.MID error')
+
   
         with open(save_folder / "stat.dat", "wb") as f:
             pickle.dump(self.feature_stats, f, protocol=2)
