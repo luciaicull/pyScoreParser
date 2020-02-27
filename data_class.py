@@ -254,12 +254,18 @@ class PieceData:
             else:
                 try:
                     perform_data = PerformData(perform, self.meta)
-                    self._align_perform_with_score(perform_data)
-                    self.performances.append(perform_data)
                 except:
-                    perform_data = None
-                    print(f'Cannot align {perform}')
+                    print(f'Cannot make performance data of {perform}')
                     self.performances.append(None)
+                else:
+                    try:
+                        self._align_perform_with_score(perform_data)
+                    except:
+                        print(f'Cannot align {perform}')
+                        self.performances.append(None)
+                    else:
+                        self.performances.append(perform_data)
+
             if save:
                 if perform_data is not None: 
                     with open(perform_dat_path, 'wb') as f:
@@ -268,9 +274,13 @@ class PieceData:
     def extract_perform_features(self, target_features):
         perform_extractor = feature_extraction.PerformExtractor(target_features)
         for perform in self.performances:
-            print('Performance:', perform.midi_path)
-            for feature_name in target_features:
-                perform.perform_features[feature_name] = getattr(perform_extractor, 'get_'+ feature_name)(self, perform)
+            try:
+                print('Performance:', perform.midi_path)
+                for feature_name in target_features:
+                    perform.perform_features[feature_name] = getattr(
+                        perform_extractor, 'get_' + feature_name)(self, perform)
+            except:
+                print('Performance was not aligned: pass')
 
     def extract_score_features(self, target_features):
         score_extractor = feature_extraction.ScoreExtractor(target_features)
@@ -283,12 +293,27 @@ class PieceData:
             self.performances.append(perform_data)
 
     def _align_perform_with_score(self, perform):
-        perform.match_between_xml_perf = matching.match_score_pair2perform(self.score.score_pairs, perform.midi_notes, perform.corresp)
-        perform.pairs = matching.make_xml_midi_pair(self.score.xml_notes, perform.midi_notes, perform.match_between_xml_perf)
-        perform.pairs, perform.valid_position_pairs = matching.make_available_xml_midi_positions(perform.pairs)
+        try:
+            perform.match_between_xml_perf = matching.match_score_pair2perform(
+                self.score.score_pairs, perform.midi_notes, perform.corresp)
+        except:
+            print('matching.match_score_pair2perform error')
+        else:
+            try:
+                perform.pairs = matching.make_xml_midi_pair(
+                    self.score.xml_notes, perform.midi_notes, perform.match_between_xml_perf)
+            except:
+                print('matching.make_xml_midi_pair error')
+            else:
+                try:
+                    perform.pairs, perform.valid_position_pairs = matching.make_available_xml_midi_positions(
+                        perform.pairs)
+                except:
+                    print('matching.make_available_xml_midi_positions error')
+                else:
+                    print('Performance path is ', perform.midi_path)
+                    perform._count_matched_notes()
 
-        print('Performance path is ', perform.midi_path)
-        perform._count_matched_notes()
 
     def __str__(self):
         text = 'Path name: {}, Composer Name: {}, Number of Performances: {}'.format(self.meta.xml_path, self.meta.composer, len(self.performances))
