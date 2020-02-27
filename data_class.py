@@ -243,7 +243,7 @@ class PieceData:
 
 
         for perform in perform_lists:
-            perform_dat_path = Path(perform).parent / Path(perform).name.replace('.mid', '.dat')
+            perform_dat_path = Path(perform[:-len('.mid')] + '.dat')
             if not save:
                 if not perform_dat_path.exists:
                     print(f'not exist {perform_dat_path}.')
