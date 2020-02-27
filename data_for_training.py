@@ -91,9 +91,9 @@ class PairDataset:
         save_folder = Path(save_folder)
         split_types = ['train', 'valid', 'test']
 
-        save_folder.mkdir()
+        save_folder.mkdir(exist_ok=True)
         for split in split_types:
-            (save_folder / split).mkdir()
+            (save_folder / split).mkdir(exist_ok=True)
 
         training_data = []
         validation_data = []
