@@ -20,19 +20,8 @@ from .midi_utils import midi_utils
 from . import score_as_graph as score_graph, xml_midi_matching as matching
 from . import xml_utils
 from . import feature_extraction
-
-align_dir = '/home/jdasam/AlignmentTool_v190813'
-
-DEFAULT_SCORE_FEATURES = ['midi_pitch', 'duration', 'beat_importance', 'measure_length', 'qpm_primo',
-                          'following_rest', 'distance_from_abs_dynamic', 'distance_from_recent_tempo',
-                          'beat_position', 'xml_position', 'grace_order', 'preceded_by_grace_note',
-                          'followed_by_fermata_rest', 'pitch', 'tempo', 'dynamic', 'time_sig_vec',
-                          'slur_beam_vec',  'composer_vec', 'notation', 'tempo_primo', 'note_location']
-DEFAULT_PERFORM_FEATURES = ['beat_tempo', 'velocity', 'onset_deviation', 'articulation', 'pedal_refresh_time',
-                            'pedal_cut_time', 'pedal_at_start', 'pedal_at_end', 'soft_pedal',
-                            'pedal_refresh', 'pedal_cut', 'qpm_primo', 'align_matched', 'articulation_loss_weight',
-                            'beat_dynamics', 'measure_tempo', 'measure_dynamics']
-
+from .constants import DEFAULT_PERFORM_FEATURES, DEFAULT_SCORE_FEATURES
+from .constants import ALIGN_DIR
 
 # total data class
 class DataSet:
@@ -351,11 +340,11 @@ class PieceMeta:
         file_folder, file_name = ntpath.split(midi_file_path)
         perform_midi = midi_file_path
 
-        shutil.copy(perform_midi, os.path.join(align_dir, 'infer.mid'))
-        shutil.copy(score_midi_path, os.path.join(align_dir, 'score.mid'))
+        shutil.copy(perform_midi, os.path.join(ALIGN_DIR, 'infer.mid'))
+        shutil.copy(score_midi_path, os.path.join(ALIGN_DIR, 'score.mid'))
         current_dir = os.getcwd()
         try:
-            os.chdir(align_dir)
+            os.chdir(ALIGN_DIR)
             subprocess.check_call(["sudo", "sh", "MIDIToMIDIAlign.sh", "score", "infer"])
         except:
             print('Error to process {}'.format(midi_file_path))
@@ -363,9 +352,9 @@ class PieceMeta:
             os.chdir(current_dir)
             shutil.copy(midi_file_path, midi_file_path+'old')
             midi_utils.to_midi_zero(midi_file_path, save_midi=True, save_name=midi_file_path)
-            shutil.copy(midi_file_path, os.path.join(align_dir, 'infer.mid'))
+            shutil.copy(midi_file_path, os.path.join(ALIGN_DIR, 'infer.mid'))
             try:
-                os.chdir(align_dir)
+                os.chdir(ALIGN_DIR)
                 subprocess.check_call(["sudo", "sh", "MIDIToMIDIAlign.sh", "score", "infer"])
             except:
                 align_success = False
@@ -380,7 +369,7 @@ class PieceMeta:
             shutil.move('infer_corresp.txt', midi_file_path.replace('.mid', '_infer_corresp.txt'))
             shutil.move('infer_match.txt', midi_file_path.replace('.mid', '_infer_match.txt'))
             shutil.move('infer_spr.txt', midi_file_path.replace('.mid', '_infer_spr.txt'))
-            shutil.move('score_spr.txt', os.path.join(align_dir, '_score_spr.txt'))
+            shutil.move('score_spr.txt', os.path.join(ALIGN_DIR, '_score_spr.txt'))
             os.chdir(current_dir)
 
 
