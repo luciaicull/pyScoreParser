@@ -20,6 +20,7 @@ from .midi_utils import midi_utils
 from . import score_as_graph as score_graph, xml_midi_matching as matching
 from . import xml_utils
 from . import feature_extraction
+from .alignment import Alignment
 from .constants import DEFAULT_PERFORM_FEATURES, DEFAULT_SCORE_FEATURES
 from .constants import ALIGN_DIR
 
@@ -53,15 +54,27 @@ class DataSet:
         self.score_midis = score_midis
         self.perform_midis = perform_midis
         self.composers = composers
-        self.load_all_piece(scores, perform_midis, score_midis, composers, save=save)
+        self.check_data_files(
+            self.scores, self.score_midis, self.perform_midis)
+        self.load_all_piece(self.scores, self.perform_midis,
+                            self.score_midis, self.composers, save=save)
 
     @classmethod
     @abstractmethod
     def load_data(self):
         '''return scores, score_midis, performances, composers'''
         raise NotImplementedError
+    
+    def check_data_files(self, scores, score_midis, perform_midis):
+        print("start to check data files: score midi, _infer_corresp.txt")
+        for n in tqdm(range(len(scores))):
+            align_tool = Alignment(scores[n], score_midis[n], perform_midis[n])
+            checked_perform_midis = align_tool.check_perf_align()
+            perform_midis[n] = checked_perform_midis
+        print("finished: all data files are checked")
 
     def load_all_piece(self, scores, perform_midis, score_midis, composers, save):
+        print("start to load all pieces: make PieceData, PerformData")
         for n in tqdm(range(len(scores))):
             try:
                 piece = PieceData(scores[n], perform_midis[n], score_midis[n], composers[n], save=save)
@@ -73,6 +86,7 @@ class DataSet:
                 # (score? performance? matching?) and in which function the error occur?
                 print(f'Error while processing {scores[n]}. Error type :{ex}')
         self.num_performances = len(self.performances)
+        print("finished: all pieces are loaded")
 
     '''
     # TGK : same as extract_selected_features(DEFAULT_SCORE_FEATURES) ...
@@ -192,9 +206,17 @@ class DataSet:
 # score data class
 class PieceData:
     def __init__(self, xml_path, perform_lists, score_midi_path=None, composer=None, save=False):
+        # meta information about piece
+        self.xml_path = xml_path
+        self.folder_path = os.path.dirname(xml_path)
+        self.composer = composer
+        self.pedal_elongate = False
+        self.perform_lists = perform_lists
+        self.score_midi_path = score_midi_path
+
         if score_midi_path == None:
             score_midi_path = os.path.dirname(xml_path) + '/' + Path(xml_path).stem + '_score.mid'
-        self.meta = PieceMeta(xml_path, perform_lists=perform_lists, score_midi_path=score_midi_path, composer=composer)
+        #self.meta = PieceMeta(xml_path, perform_lists=perform_lists, score_midi_path=score_midi_path, composer=composer)
         self.performances = []
         
         score_dat_path = os.path.dirname(xml_path) + '/score.dat'
@@ -228,7 +250,9 @@ class PieceData:
     
         # TODO: move to ScoreData
         self.score_features = {}
-        self.meta._check_perf_align()
+
+        # TODO: seperate meta from data_class
+        #self.meta._check_perf_align()
 
 
         for perform in perform_lists:
@@ -242,7 +266,7 @@ class PieceData:
                     self.performances.append(perform_data)
             else:
                 try:
-                    perform_data = PerformData(perform, self.meta)
+                    perform_data = PerformData(perform)
                 except:
                     print(f'Cannot make performance data of {perform}')
                     self.performances.append(None)
@@ -276,8 +300,8 @@ class PieceData:
         self.score_features = score_extractor.extract_score_features(self)
 
     def _load_performances(self):
-        for perf_midi_name in self.meta.perform_lists:
-            perform_data = PerformData(perf_midi_name, self.meta)
+        for perf_midi_name in self.perform_lists:
+            perform_data = PerformData(perf_midi_name)
             self._align_perform_with_score(perform_data)
             self.performances.append(perform_data)
 
@@ -305,10 +329,10 @@ class PieceData:
 
 
     def __str__(self):
-        text = 'Path name: {}, Composer Name: {}, Number of Performances: {}'.format(self.meta.xml_path, self.meta.composer, len(self.performances))
+        text = 'Path name: {}, Composer Name: {}, Number of Performances: {}'.format(self.xml_path, self.composer, len(self.performances))
         return text
 
-
+'''
 # score meta data class
 class PieceMeta:
     def __init__(self, xml_path, perform_lists, score_midi_path, composer=None):
@@ -371,11 +395,11 @@ class PieceMeta:
             shutil.move('infer_spr.txt', midi_file_path.replace('.mid', '_infer_spr.txt'))
             shutil.move('score_spr.txt', os.path.join(ALIGN_DIR, '_score_spr.txt'))
             os.chdir(current_dir)
-
+'''
 
 # performance data class
 class PerformData:
-    def __init__(self, midi_path, meta):
+    def __init__(self, midi_path):
         self.midi_path = midi_path
         self.midi = midi_utils.to_midi_zero(self.midi_path)
         self.midi = midi_utils.add_pedal_inf_to_notes(self.midi)
@@ -391,8 +415,6 @@ class PerformData:
         self.num_matched_notes = 0
         self.num_unmatched_notes = 0
         self.tempos = []
-
-        self.meta = meta
 
     def __str__(self):
         return str(self.__dict__)
@@ -470,14 +492,15 @@ class YamahaDataset(DataSet):
 
     def load_data(self):
         path = Path(self.path)
-        xml_list = sorted(path.glob('**/*.musicxml'))
+        #xml_list = sorted(path.glob('**/*.musicxml'))
+        xml_list = sorted(path.glob('**/musicxml_cleaned.musicxml'))
         score_midis = [xml.parent / 'midi_cleaned.mid' for xml in xml_list]
         composers = [xml.relative_to(self.path).parts[0] for xml in xml_list]
 
         perform_lists = []
         for xml in xml_list:
             midis = sorted(xml.parent.glob('*.mid')) + sorted(xml.parent.glob('*.MID'))
-            midis = [str(midi) for midi in midis if midi.name not in ['midi.mid', 'midi_cleaned.mid']]
+            midis = [str(midi) for midi in midis if midi.name not in ['midi.mid', 'midi_cleaned.mid', 'midi_cleaned_error.mid']]
             midis = [midi for midi in midis if not 'XP' in midi]
             perform_lists.append(midis)
 

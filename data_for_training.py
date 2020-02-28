@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 class ScorePerformPairData:
     def __init__(self, piece, perform):
-        self.piece_path = piece.meta.xml_path
+        self.piece_path = piece.xml_path
         self.perform_path = perform.midi_path
         self.graph_edges = piece.notes_graph
         self.features = {**piece.score_features, **perform.perform_features}
