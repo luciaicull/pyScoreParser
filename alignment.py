@@ -96,5 +96,7 @@ class Alignment:
             shutil.move('infer_spr.txt', midi_file_path[:-len('.mid')]+'_infer_spr.txt')
             shutil.move('score_spr.txt', os.path.join(
                 ALIGN_DIR, '_score_spr.txt'))
+            shutil.move('score_fmt3x.txt',
+                        midi_file_path[:-len('.mid')] + '_score_fmt3x.txt')
             os.chdir(current_dir)
 
