@@ -97,7 +97,7 @@ class PairDataset:
                 with open(save_folder / pair_data.split_type / save_name, "wb") as f:
                     pickle.dump(formatted_data, f, protocol=2)
             except:
-                print('.MID error')
+                print('Error: No Features with {}'.format(pair_data.perform_path))
 
   
         with open(save_folder / "stat.dat", "wb") as f:
