@@ -219,7 +219,8 @@ class PieceData:
         #self.meta = PieceMeta(xml_path, perform_lists=perform_lists, score_midi_path=score_midi_path, composer=composer)
         self.performances = []
         
-        score_dat_path = os.path.dirname(xml_path) + '/score.dat'
+        #score_dat_path = os.path.dirname(xml_path) + '/score.dat'
+        score_dat_path = Path(xml_path).with_suffix('.dat')
 
         if save:
             self.score = ScoreData(xml_path, score_midi_path)
@@ -516,14 +517,15 @@ class EmotionDataset(DataSet):
 
     def load_data(self):
         path = Path(self.path)
-        xml_list = sorted(path.glob('**/*.musicxml'))
-        score_midis = [xml.stem + '_midi_cleaned.mid' for xml in xml_list]
+        xml_list = sorted(path.glob('*.musicxml'))
+        score_midis = [xml.parent / (xml.stem + '_midi_cleaned.mid') for xml in xml_list]
         composers = [xml.stem.split('.')[0] for xml in xml_list]
 
         perform_lists = []
         for xml in xml_list:
             midis = sorted(xml.parent.glob(f'{xml.stem}*.mid'))
-            midis = [str(midi) for midi in midis if midi.name not in ['midi.mid', 'midi_cleaned.mid']]
+            midis = [str(midi)
+                     for midi in midis if 'midi_cleaned.mid' not in midi.name]
             perform_lists.append(midis)
 
         # Path -> string wrapper
