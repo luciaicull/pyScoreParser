@@ -4,11 +4,10 @@ import pickle
 import _pickle as cPickle
 import csv
 
-emotion_path = '/home/yoojin/data/emotionDataset/test'
-#emotion_save_path = '/home/yoojin/repositories/pyScoreParser/emotion_save'
-emotion_save_path = '/home/yoojin/data/emotionDataset/test/save'
+emotion_path = '/home/yoojin/data/emotionDataset/total_dataset'
+emotion_save_path = '/home/yoojin/repositories/pyScoreParser/emotion_save'
+
 print('Start: make dataset')
-# make datasets
 emotion_dataset = EmotionDataset(emotion_path, emotion_save_path)
 print('Finished: make dataset')
 
@@ -16,13 +15,13 @@ print('Start: save dataset')
 with open(emotion_save_path + "/total_dataset.dat", "wb") as f:
     pickle.dump(emotion_dataset, f, protocol=2)
 print('Finished: save dataset')
-'''
+
 print('Start: load dataset')
 with open(emotion_save_path + '/total_dataset.dat', 'rb') as f:
     u = cPickle.Unpickler(f)
     emotion_dataset = u.load()
 print('Finished: load dataset')
-'''
+
 print('Start: save note matched result')
 f = open(emotion_save_path + '/match_result.csv', 'w', encoding='utf-8')
 wr = csv.writer(f)
@@ -45,6 +44,11 @@ print('Start: make PairDataset')
 emotion_pair_data = PairDataset(emotion_dataset)
 print('Finished: make PairDataset')
 
+# save PairDataset for entire dataset for feature tracking
+# you can check feature dictionary in each ScorePerformPairData() object in PairDataset.data_pairs
+# reference : data_for_training.py or use test_check_features.py
+# features in ScorePerformData.features() are shape of dictionary
+#       : {feature_key1:(len(notes)), feature_key2:(len(notes)), ...}
 with open(emotion_save_path + "/pairdataset.dat", "wb") as f:
     pickle.dump(emotion_pair_data, f, protocol=2)
 
@@ -53,6 +57,9 @@ emotion_pair_data.update_dataset_split_type()
 emotion_pair_data.update_mean_stds_of_entire_dataset()
 print('Finished: statistics')
 
+# features will saved at {emotion_save_path}.{train OR test OR validation}.{perform_midi_name}.dat
+# features are in shape of list
+#        : (len(notes), len(features))
 print('Start: save features')
 emotion_pair_data.save_features_for_virtuosoNet(emotion_save_path)
 print('Finished: save features')

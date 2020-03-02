@@ -5,11 +5,9 @@ import _pickle as cPickle
 import csv
 
 yamaha_path = '/home/yoojin/data/chopin_cleaned-updated'
-#yamaha_path = '/home/yoojin/data/test_data/Liszt'
 yamaha_save_path = '/home/yoojin/repositories/pyScoreParser/yamaha_save'
-'''
+
 print('Start: make dataset')
-# make datasets
 yamaha_dataset = YamahaDataset(yamaha_path, yamaha_path)
 print('Finished: make dataset')
 
@@ -17,13 +15,13 @@ print('Start: save dataset')
 with open(yamaha_save_path + "/total_dataset.dat", "wb") as f:
     pickle.dump(yamaha_dataset, f, protocol=2)
 print('Finished: save dataset')
-'''
+
 print('Start: load dataset')
 with open(yamaha_save_path + '/total_dataset.dat', 'rb') as f:
     u = cPickle.Unpickler(f)
     yamaha_dataset = u.load()
 print('Finished: load dataset')
-'''
+
 print('Start: save note matched result')
 f = open(yamaha_save_path + '/match_result.csv', 'w', encoding='utf-8')
 wr = csv.writer(f)
@@ -34,7 +32,7 @@ for piece in yamaha_dataset.pieces:
             performance.num_matched_notes), str(performance.num_unmatched_notes)])
 f.close()
 print('Finished: save note matched result')
-'''
+
 print('Start: extract features')
 for piece in yamaha_dataset.pieces:
     piece.extract_perform_features(DEFAULT_PERFORM_FEATURES)
