@@ -26,7 +26,7 @@ from .constants import ALIGN_DIR
 
 # total data class
 class DataSet:
-    def __init__(self, path, save=False):
+    def __init__(self, path, save=False, new_alignment=False):
         self.path = path
 
         self.pieces = []
@@ -54,10 +54,10 @@ class DataSet:
         self.score_midis = score_midis
         self.perform_midis = perform_midis
         self.composers = composers
-        self.check_data_files(
-            self.scores, self.score_midis, self.perform_midis)
+        if not new_alignment:
+            self.check_data_files(self.scores, self.score_midis, self.perform_midis)
         self.load_all_piece(self.scores, self.perform_midis,
-                            self.score_midis, self.composers, save=save)
+                            self.score_midis, self.composers, save=save, new_alignment=new_alignment)
 
     @classmethod
     @abstractmethod
@@ -73,11 +73,11 @@ class DataSet:
             perform_midis[n] = checked_perform_midis
         print("finished: all data files are checked")
 
-    def load_all_piece(self, scores, perform_midis, score_midis, composers, save):
+    def load_all_piece(self, scores, perform_midis, score_midis, composers, save, new_alignment):
         print("start to load all pieces: make PieceData, PerformData")
         for n in tqdm(range(len(scores))):
             try:
-                piece = PieceData(scores[n], perform_midis[n], score_midis[n], composers[n], save=save)
+                piece = PieceData(scores[n], perform_midis[n], score_midis[n], composers[n], save=save, new_alignment=new_alignment)
                 self.pieces.append(piece)
                 for perf in piece.performances:
                     self.performances.append(perf)
@@ -205,7 +205,7 @@ class DataSet:
 
 # score data class
 class PieceData:
-    def __init__(self, xml_path, perform_lists, score_midi_path=None, composer=None, save=False):
+    def __init__(self, xml_path, perform_lists, score_midi_path=None, composer=None, save=False, new_alignment=False):
         # meta information about piece
         self.xml_path = xml_path
         self.folder_path = os.path.dirname(xml_path)
@@ -223,7 +223,7 @@ class PieceData:
         score_dat_path = Path(xml_path).with_suffix('.dat')
 
         if save:
-            self.score = ScoreData(xml_path, score_midi_path)
+            self.score = ScoreData(xml_path, score_midi_path, new_alignment)
             with open(score_dat_path , 'wb') as f:
                 pickle.dump(self.score, f, protocol=2)
         else:
@@ -233,7 +233,7 @@ class PieceData:
                     self.score = u.load()
             else:
                 print(f'not exist {score_dat_path}. make one')
-                self.score = ScoreData(xml_path, score_midi_path)
+                self.score = ScoreData(xml_path, score_midi_path, new_alignment)
                 with open(score_dat_path , 'wb') as f:
                     pickle.dump(self.score, f, protocol=2)
 
@@ -267,18 +267,27 @@ class PieceData:
                     self.performances.append(perform_data)
             else:
                 try:
-                    perform_data = PerformData(perform)
+                    perform_data = PerformData(perform, new_alignment)
                 except:
                     print(f'Cannot make performance data of {perform}')
                     self.performances.append(None)
                 else:
-                    try:
-                        self._align_perform_with_score(perform_data)
-                    except:
-                        print(f'Cannot align {perform}')
-                        self.performances.append(None)
+                    if new_alignment:
+                        try:
+                            self._align_perform_with_score_directly(perform_data)
+                        except:
+                            print(f'No alignment result of {perform}')
+                            self.performances.append(None)
+                        else:
+                            self.performances.append(perform_data)
                     else:
-                        self.performances.append(perform_data)
+                        try: 
+                            self._align_perform_with_score(perform_data)
+                        except:
+                            print(f'Cannot align {perform}')
+                            self.performances.append(None)
+                        else:
+                            self.performances.append(perform_data)
 
             if save:
                 if perform_data is not None: 
@@ -300,14 +309,15 @@ class PieceData:
         score_extractor = feature_extraction.ScoreExtractor(target_features)
         self.score_features = score_extractor.extract_score_features(self)
 
-    def _load_performances(self):
+    def _load_performances(self, new_alignment=False):
         for perf_midi_name in self.perform_lists:
-            perform_data = PerformData(perf_midi_name)
+            perform_data = PerformData(perf_midi_name, new_alignment)
             self._align_perform_with_score(perform_data)
             self.performances.append(perform_data)
 
     def _align_perform_with_score(self, perform):
         try:
+            print('Performance path is ', perform.midi_path)
             perform.match_between_xml_perf = matching.match_score_pair2perform(
                 self.score.score_pairs, perform.midi_notes, perform.corresp)
         except:
@@ -325,88 +335,45 @@ class PieceData:
                 except:
                     print('matching.make_available_xml_midi_positions error')
                 else:
-                    print('Performance path is ', perform.midi_path)
                     perform._count_matched_notes()
 
+    def _align_perform_with_score_directly(self, perform):
+        print('Performance path: ', perform.midi_path)
+
+        # get pair
+        try:
+            perform.pairs = matching.make_direct_xml_midi_pair(self.score.xml_notes, perform.midi_notes, perform.match_list, perform.missing_xml_list)
+        except:
+            print('matching.make_direct_xml_midi_pair error')
+        else:
+            try:
+                perform.pairs, perform.valid_position_pairs = matching.make_available_xml_midi_positions(
+                    perform.pairs)
+            except:
+                print('matching.make_available_xml_midi_positions error')
+            else:
+                perform._count_matched_notes()
+        
 
     def __str__(self):
         text = 'Path name: {}, Composer Name: {}, Number of Performances: {}'.format(self.xml_path, self.composer, len(self.performances))
         return text
 
-'''
-# score meta data class
-class PieceMeta:
-    def __init__(self, xml_path, perform_lists, score_midi_path, composer=None):
-        self.xml_path = xml_path
-        self.folder_path = os.path.dirname(xml_path)
-        self.composer = composer
-        self.pedal_elongate = False
-        self.perform_lists = perform_lists
-        self.score_midi_path = score_midi_path
-
-    def __str__(self):
-        return str(self.__dict__)
-
-    def _check_perf_align(self):
-        # TODO: better to move PieceData?
-        aligned_perf = []
-        for perf in self.perform_lists:
-            align_file_name = os.path.splitext(perf)[0] + '_infer_corresp.txt'
-            if os.path.isfile(align_file_name):
-                aligned_perf.append(perf)
-                continue
-            self.align_score_and_perf_with_nakamura(os.path.abspath(perf), self.score_midi_path)
-            if os.path.isfile(align_file_name): # check once again whether the alignment was successful
-                aligned_perf.append(perf)
-
-        self.perf_file_list = aligned_perf
-
-    def align_score_and_perf_with_nakamura(self, midi_file_path, score_midi_path):
-        file_folder, file_name = ntpath.split(midi_file_path)
-        perform_midi = midi_file_path
-
-        shutil.copy(perform_midi, os.path.join(ALIGN_DIR, 'infer.mid'))
-        shutil.copy(score_midi_path, os.path.join(ALIGN_DIR, 'score.mid'))
-        current_dir = os.getcwd()
-        try:
-            os.chdir(ALIGN_DIR)
-            subprocess.check_call(["sudo", "sh", "MIDIToMIDIAlign.sh", "score", "infer"])
-        except:
-            print('Error to process {}'.format(midi_file_path))
-            print('Trying to fix MIDI file {}'.format(midi_file_path))
-            os.chdir(current_dir)
-            shutil.copy(midi_file_path, midi_file_path+'old')
-            midi_utils.to_midi_zero(midi_file_path, save_midi=True, save_name=midi_file_path)
-            shutil.copy(midi_file_path, os.path.join(ALIGN_DIR, 'infer.mid'))
-            try:
-                os.chdir(ALIGN_DIR)
-                subprocess.check_call(["sudo", "sh", "MIDIToMIDIAlign.sh", "score", "infer"])
-            except:
-                align_success = False
-                print('Fail to process {}'.format(midi_file_path))
-                os.chdir(current_dir)
-            else:
-                align_success = True
-        else:
-            align_success = True
-
-        if align_success:
-            shutil.move('infer_corresp.txt', midi_file_path.replace('.mid', '_infer_corresp.txt'))
-            shutil.move('infer_match.txt', midi_file_path.replace('.mid', '_infer_match.txt'))
-            shutil.move('infer_spr.txt', midi_file_path.replace('.mid', '_infer_spr.txt'))
-            shutil.move('score_spr.txt', os.path.join(ALIGN_DIR, '_score_spr.txt'))
-            os.chdir(current_dir)
-'''
 
 # performance data class
 class PerformData:
-    def __init__(self, midi_path):
+    def __init__(self, midi_path, new_alignment=False):
         self.midi_path = midi_path
         self.midi = midi_utils.to_midi_zero(self.midi_path)
         self.midi = midi_utils.add_pedal_inf_to_notes(self.midi)
         self.midi_notes = self.midi.instruments[0].notes
-        self.corresp_path = os.path.splitext(self.midi_path)[0] + '_infer_corresp.txt'
-        self.corresp = matching.read_corresp(self.corresp_path)
+        if new_alignment:
+            self.match_path = os.path.splitext(self.midi_path)[
+                0] + '_match.txt'
+            self.match_list, self.missing_xml_list = matching.read_match_file(self.match_path)
+        else:
+            self.corresp_path = os.path.splitext(self.midi_path)[0] + '_infer_corresp.txt'
+            self.corresp = matching.read_corresp(self.corresp_path)
         self.perform_features = {}
         self.match_between_xml_perf = None
         
@@ -429,11 +396,11 @@ class PerformData:
             else:
                 self.num_matched_notes += 1
         print(
-            'Number of Matched Notes: ' + str(self.num_matched_notes) + ', unmatched notes: ' + str(self.num_unmatched_notes))
+            'Number of Final Matched Notes: ' + str(self.num_matched_notes) + ', unmatched notes: ' + str(self.num_unmatched_notes))
 
 
 class ScoreData:
-    def __init__(self, xml_path, score_midi_path):
+    def __init__(self, xml_path, score_midi_path, new_alignment=False):
         self.xml_obj = None
         self.xml_notes = None
         self.num_notes = 0
@@ -448,8 +415,12 @@ class ScoreData:
         self.section_positions = []
 
         self._load_score_xml(xml_path)
-        self._load_or_make_score_midi(score_midi_path)
-        self._match_score_xml_to_midi()
+        if new_alignment: # for score xml - perform midi direct alignment
+            pass
+        else: # original score xml - score midi alignment
+            self._load_or_make_score_midi(score_midi_path)
+            self._match_score_xml_to_midi()
+        
 
     def __str__(self):
         return str(self.__dict__)
@@ -486,10 +457,24 @@ class ScoreData:
         self.score_match_list = matching.match_xml_to_midi(self.xml_notes, self.score_midi_notes)
         self.score_pairs = matching.make_xml_midi_pair(self.xml_notes, self.score_midi_notes, self.score_match_list)
 
+        self._count_matched_notes()
+
+    def _count_matched_notes(self):
+        self.num_matched_notes = 0
+        self.num_unmatched_notes = 0
+        for pair in self.score_pairs:
+            if pair == []:
+                self.num_unmatched_notes += 1
+            else:
+                self.num_matched_notes += 1
+        print('Number of Score Matched Notes: ' + str(self.num_matched_notes) +
+              ', Score unmatched notes: ' + str(self.num_unmatched_notes))
+
+
 
 class YamahaDataset(DataSet):
-    def __init__(self, path, save):
-        super().__init__(path, save=save)
+    def __init__(self, path, save, new_alignment=False):
+        super().__init__(path, save=save, new_alignment=new_alignment)
 
     def load_data(self):
         path = Path(self.path)
@@ -512,8 +497,8 @@ class YamahaDataset(DataSet):
 
 
 class EmotionDataset(DataSet):
-    def __init__(self, path, save=False):
-        super().__init__(path, save=save)
+    def __init__(self, path, save=False, new_alignment=False):
+        super().__init__(path, save=save, new_alignment=new_alignment)
 
     def load_data(self):
         path = Path(self.path)
@@ -535,8 +520,8 @@ class EmotionDataset(DataSet):
 
 
 class StandardDataset(DataSet):
-    def __init__(self, path, save=False):
-        super().__init__(path, save=save)
+    def __init__(self, path, save=False, new_alignment=False):
+        super().__init__(path, save=save, new_alignment=new_alignment)
 
     def load_data(self):
         path = Path(self.path)

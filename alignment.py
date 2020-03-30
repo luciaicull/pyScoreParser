@@ -100,3 +100,17 @@ class Alignment:
                         midi_file_path[:-len('.mid')] + '_score_fmt3x.txt')
             os.chdir(current_dir)
 
+    def align_score_xml_and_perf_midi_with_nakamura(self, xml_path, midi_path):
+        shutil.copy(str(midi_path), os.path.join(ALIGN_DIR, 'infer.mid'))
+        shutil.copy(str(xml_path), os.path.join(ALIGN_DIR, 'ref_score.xml'))
+        current_dir = os.getcwd()
+        os.chdir(ALIGN_DIR)
+        subprocess.check_call(
+            ["sudo", "sh", "MusicXMLToMIDIAlign.sh", "ref_score", "infer"])
+        print('Success to process {}'.format(midi_path))
+
+        result_match_path = midi_path.with_name(midi_path.name[:-len('.mid')] + '_match.txt')
+        result_fmt3_path = xml_path.with_name(xml_path.name[:-len('.xml')] + '_fmt3x.txt')
+        shutil.move('infer_match.txt', str(result_match_path))
+        shutil.move('ref_score_fmt3x.txt', str(result_fmt3_path))
+        os.chdir(current_dir)

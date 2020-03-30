@@ -4,8 +4,11 @@ import pickle
 import _pickle as cPickle
 import csv
 
-emotion_path = '/home/yoojin/data/emotionDataset/total_dataset'
-emotion_save_path = '/home/yoojin/repositories/pyScoreParser/emotion_save'
+#emotion_path = '/home/yoojin/data/emotionDataset_test'
+emotion_path = '/home/yoojin/data/20200320/20200321_test_midi_midi/'
+#emotion_save_path = '/home/yoojin/repositories/pyScoreParser/emotion_save'
+#emotion_save_path = '/home/yoojin/data/'
+emotion_save_path = '/home/yoojin/data/20200320/20200321_test_midi_midi/save'
 
 print('Start: make dataset')
 emotion_dataset = EmotionDataset(emotion_path, emotion_save_path)
@@ -22,18 +25,30 @@ with open(emotion_save_path + '/total_dataset.dat', 'rb') as f:
     emotion_dataset = u.load()
 print('Finished: load dataset')
 
+print('Start: save score note matched result')
+f = open(emotion_save_path + '/score_match_result.csv', 'w', encoding='utf-8')
+wr = csv.writer(f)
+wr.writerow(['score',
+             'num_matched_notes', 'num_unmatched_notes'])
+for piece in emotion_dataset.pieces:
+    score = piece.score
+    wr.writerow([piece.score_midi_path.split('/')[-1], str(
+        score.num_matched_notes), str(score.num_unmatched_notes)])
+f.close()
+print('Finished: save score note matched result')
+
 print('Start: save note matched result')
-f = open(emotion_save_path + '/match_result.csv', 'w', encoding='utf-8')
+f = open(emotion_save_path + '/final_match_result.csv', 'w', encoding='utf-8')
 wr = csv.writer(f)
 wr.writerow(['performance.midi_path',
              'num_matched_notes', 'num_unmatched_notes'])
 for piece in emotion_dataset.pieces:
     for performance in piece.performances:
-        wr.writerow([performance.midi_path, str(
+        wr.writerow([performance.midi_path.split('/')[-1], str(
             performance.num_matched_notes), str(performance.num_unmatched_notes)])
 f.close()
 print('Finished: save note matched result')
-
+'''
 print('Start: extract features')
 for piece in emotion_dataset.pieces:
     piece.extract_perform_features(DEFAULT_PERFORM_FEATURES)
@@ -63,3 +78,4 @@ print('Finished: statistics')
 print('Start: save features')
 emotion_pair_data.save_features_for_virtuosoNet(emotion_save_path)
 print('Finished: save features')
+'''
