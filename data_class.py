@@ -54,8 +54,7 @@ class DataSet:
         self.score_midis = score_midis
         self.perform_midis = perform_midis
         self.composers = composers
-        if not new_alignment:
-            self.check_data_files(self.scores, self.score_midis, self.perform_midis)
+        self.check_data_files(self.scores, self.score_midis, self.perform_midis, new_alignment)
         self.load_all_piece(self.scores, self.perform_midis,
                             self.score_midis, self.composers, save=save, new_alignment=new_alignment)
 
@@ -65,11 +64,14 @@ class DataSet:
         '''return scores, score_midis, performances, composers'''
         raise NotImplementedError
     
-    def check_data_files(self, scores, score_midis, perform_midis):
-        print("start to check data files: score midi, _infer_corresp.txt")
+    def check_data_files(self, scores, score_midis, perform_midis, direct_matching=False):
+        if direct_matching:
+            print("start to check data files: _match.txt")
+        else:
+            print("start to check data files: score midi, _infer_corresp.txt")
         for n in tqdm(range(len(scores))):
-            align_tool = Alignment(scores[n], score_midis[n], perform_midis[n])
-            checked_perform_midis = align_tool.check_perf_align()
+            align_tool = Alignment(scores[n], score_midis[n], perform_midis[n], direct_matching)
+            checked_perform_midis = align_tool.check_perf_align(direct_matching)
             perform_midis[n] = checked_perform_midis
         print("finished: all data files are checked")
 

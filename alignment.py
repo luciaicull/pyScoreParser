@@ -2,6 +2,7 @@ import os
 import ntpath
 import shutil
 import subprocess
+from pathlib import Path
 
 from .constants import ALIGN_DIR
 from .midi_utils import midi_utils
@@ -9,9 +10,10 @@ from . import xml_utils
 from .musicxml_parser import MusicXMLDocument
 
 class Alignment:
-    def __init__(self, xml_path, score_midi_path, perform_lists):
+    def __init__(self, xml_path, score_midi_path, perform_lists, direct_matching=False):
         self.xml_path = xml_path
-        self.score_midi_path = self._check_score_midi(score_midi_path)
+        if not direct_matching:
+            self.score_midi_path = self._check_score_midi(score_midi_path)
         self.perform_lists = perform_lists
 
     def _check_score_midi(self, score_midi_path):
@@ -38,7 +40,28 @@ class Alignment:
 
         return xml_notes
 
-    def check_perf_align(self):
+    def check_perf_align(self, direct_matching=False):
+        if direct_matching:
+            return self._xml_midi_align()
+        else:
+            return self._midi_midi_align()
+    
+    def _xml_midi_align(self):
+        print('processing score: {}'.format(self.xml_path.split('/')[-1]))
+        aligned_perf = []
+        for perf in self.perform_lists:
+            print('processing performance: {}'.format(perf.split('/')[-1]))
+            align_file_name = os.path.splitext(perf)[0] + '_match.txt'
+            if os.path.isfile(align_file_name):
+                aligned_perf.append(perf)
+                continue
+            self.align_score_xml_and_perf_midi_with_nakamura(self.xml_path, perf)
+            if os.path.isfile(align_file_name):
+                aligned_perf.append(perf)
+        
+        return aligned_perf
+
+    def _midi_midi_align(self):
         print('processing score: {}'.format(self.score_midi_path))
         aligned_perf = []
         for perf in self.perform_lists:
@@ -109,6 +132,8 @@ class Alignment:
             ["sudo", "sh", "MusicXMLToMIDIAlign.sh", "ref_score", "infer"])
         print('Success to process {}'.format(midi_path))
 
+        midi_path = Path(midi_path)
+        xml_path = Path(xml_path)
         result_match_path = midi_path.with_name(midi_path.name[:-len('.mid')] + '_match.txt')
         result_fmt3_path = xml_path.with_name(xml_path.name[:-len('.xml')] + '_fmt3x.txt')
         shutil.move('infer_match.txt', str(result_match_path))

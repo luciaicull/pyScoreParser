@@ -5,8 +5,8 @@ import pickle
 import _pickle as cPickle
 import csv
 
-emotion_path = '/home/yoojin/data/20200330/test_xml_midi_95/'
-emotion_save_path = '/home/yoojin/data/20200330/test_xml_midi_95/save'
+emotion_path = '/home/yoojin/data/20200330/test_sth/'
+emotion_save_path = '/home/yoojin/data/20200330/test_sth/save'
 
 print('Start: make dataset')
 emotion_dataset = EmotionDataset(
