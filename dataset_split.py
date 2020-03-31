@@ -46,3 +46,14 @@ TEST_LIST = ['Bach/Prelude/bwv_858/',
              'Liszt/Gran_Etudes_de_Paganini/6_Theme_and_Variations/',
              ]
 
+EMOTION_VALID_LIST = ['Bach.prelude-and-fugue_bwv880_no11_prelude.mm_1-end',
+                      'Beethoven.sonata_op10-3_no7_mov1.mm_1-125',
+                      'Chopin.etude_op10_no4_.mm_1-33',
+                      'Chopin.etude_op10_no6_.mm_1-end'
+                      ]
+EMOTION_TEST_LIST = ['Bach.partita_bwv825_no1_minuet1-2.mm_1-end',
+                     'Beethoven.sonata_op27-2_no14_mov1.mm_1-23',
+                     'Chopin.etude_op25_no9_.mm_1-37',
+                     'Chopin.mazurka_op24_no1_.mm_1-32',
+                     'Schubert.impromptu_op90_no3_.mm_1-15'
+                    ]
