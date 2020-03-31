@@ -117,8 +117,23 @@ def read_match_file(match_path):
     
     return match_txt['match_list'], match_txt['missing']
 
-# for new alignment - new alignment main method. 
+
 def make_direct_xml_midi_pair(xml_notes, midi_notes, match_list, missing_xml_list):
+    """
+    Main method for score xml - performance midi direct matching process
+
+    Parameters
+    -----------
+    xml_notes : list of xml note object
+    midi_notes : list of midi note object
+    match_list : lines of match result in _match.txt, in dictionary(dict) format
+    missing_xml_list : lines of missing result in _match.txt, in dictionary(dict) format
+
+    Returns
+    -----------
+    pairs : list of match pair in dictionary format - {'xml': xml_index, 'midi': midi_index}
+
+    """
     index_dict_list = []
     for xml_index, xml_note in enumerate(xml_notes):
         dic = match_xml_midi_directly(xml_index, xml_note, match_list, midi_notes)
@@ -130,6 +145,21 @@ def make_direct_xml_midi_pair(xml_notes, midi_notes, match_list, missing_xml_lis
 
 
 def match_xml_midi_directly(xml_index, xml_note, match_list, midi_notes):
+    """
+    Match method for one xml note
+
+    Parameters
+    -----------
+    xml_index : index of xml_note in xml_notes list
+    xml_note : xml note object
+    midi_notes : list of midi note object
+    match_list : lines of match result in _match.txt, in dictionary(dict) format
+
+    Returns
+    -----------
+    dic : result of match result in dictionary format
+
+    """
     dic = {'match_index': [], 'xml_index': {'idx':xml_index, 'pitch':xml_note.pitch[0]}, 'midi_index': [
     ], 'is_trill': False, 'is_ornament': False, 'is_overlapped': xml_note.is_overlapped, 'overlap_xml_index': [], 'unmatched': False, 'fixed_trill_idx': []}
 
@@ -151,6 +181,17 @@ def match_xml_midi_directly(xml_index, xml_note, match_list, midi_notes):
 
 
 def find_corresp_match_and_midi(dic, match_list, midi_notes, score_time, score_pitch):
+    """
+    find corresponding match dictionary and midi note for one xml note
+
+    Parameters
+    -----------
+    dic : result of match result in dictionary format
+    match_list : lines of match result in _match.txt, in dictionary(dict) format
+    midi_notes : list of midi note object
+    score_time : score time of xml note
+    score_pitch : pitch of xml note (in string)     
+    """
     for match_index, match in enumerate(match_list):
         if match['xmlNoteID'] != '*':
             if score_time == match['scoreTime'] and score_pitch == match['pitch']:
@@ -163,6 +204,21 @@ def find_corresp_match_and_midi(dic, match_list, midi_notes, score_time, score_p
 
 
 def find_midi_note_index(midi_notes, start, end, pitch, ornament=False):
+    """
+    find corresponding midi note index for one xml note
+
+    Parameters
+    -----------
+    midi_notes : list of midi note object
+    start: midi start time in match_list
+    end : midi end time in match_list
+    pitch : midi pitch in match_list (in string)
+    ornament : whether it's ornament
+
+    Returns
+    -----------
+    dictionary of midi index and pitch
+    """
     pitch = check_pitch(pitch)
     if not ornament:
         for i, note in enumerate(midi_notes):
@@ -176,6 +232,17 @@ def find_midi_note_index(midi_notes, start, end, pitch, ornament=False):
 
 
 def check_pitch(pitch):
+    """
+    check string pitch format and fix it
+
+    Parameters
+    -----------
+    pitch : midi string pitch
+
+    Returns
+    -----------
+    pitch : midi string pitch
+    """
     if len(pitch) == 4:
         base_pitch_num = pretty_midi.note_name_to_number(pitch[0]+pitch[-1])
         if pitch[1:3] == 'bb':
@@ -186,6 +253,16 @@ def check_pitch(pitch):
 
 
 def find_trill_midis(dic, match_list, midi_notes):
+    """
+    find possible trill midi note indices
+
+    Parameters
+    -----------
+    dic : result of match result in dictionary format
+    match_list : lines of match result in _match.txt, in dictionary(dict) format
+    midi_notes : list of midi note object
+
+    """
     if len(dic['match_index']) > 1:
         # 미디 여러 개 - xml 하나라서 match가 여러 개 뜰 경우
         dic['is_trill'] = True
@@ -236,6 +313,17 @@ def find_trill_midis(dic, match_list, midi_notes):
 
 
 def find_ornament_midis(dic, score_time, match_list, midi_notes):
+    """
+    find possible ornament midi note indices
+
+    Parameters
+    -----------
+    dic : result of match result in dictionary format
+    score_time : score time of xml note
+    match_list : lines of match result in _match.txt, in dictionary(dict) format
+    midi_notes : list of midi note object
+    
+    """
     if len(dic['match_index']) > 0:
         match = match_list[dic['match_index'][0]]
         cand_match_idx = [idx for idx, match in enumerate(
@@ -280,13 +368,24 @@ def find_ornament_midis(dic, score_time, match_list, midi_notes):
 
 
 def pair_transformation(xml_notes, midi_notes, index_dict_list):
-    # start: index_dict_list - list of
-    # dic = {'match_index': [], 'xml_index': {xml_index, xml_note.pitch[0]}, 'midi_index': [], 
-    # 'is_trill': False, 'is_ornament': False, 'is_overlapped': xml_note.is_overlapped, 
-    # 'overlap_xml_index': [], 'unmatched': False, 'fixed_trill_idx': []}
+    """
+    Transform pair format from index_dict_list to original pair
 
-    # dest: pairs - list of
-    # {'xml': xml_notes[i], 'midi': midi_notes[match_list[i]]}
+    Parameters
+    -----------
+    xml_notes : list of xml note object
+    midi_notes : list of midi note object
+    index_dict_list 
+            : list of dictionary
+            {'match_index': [], 'xml_index': {xml_index, xml_note.pitch[0]}, 'midi_index': [], 
+             'is_trill': False, 'is_ornament': False, 'is_overlapped': xml_note.is_overlapped, 
+             'overlap_xml_index': [], 'unmatched': False, 'fixed_trill_idx': []}
+    
+    Returns
+    -----------
+    pairs : list of dictionary
+            {'xml': xml_notes[i], 'midi': midi_notes[match_list[i]]}
+    """
     pairs = []
     for dic in index_dict_list:
         xml_idx = dic['xml_index']['idx']
