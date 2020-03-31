@@ -311,11 +311,11 @@ def get_trill_parameters():
 
 
 def composer_name_to_vec(composer_name):
-    #composer_name_list = ['Bach','Balakirev', 'Beethoven', 'Brahms', 'Chopin', 'Debussy', 'Glinka', 'Haydn',
-    #                      'Liszt', 'Mozart', 'Prokofiev', 'Rachmaninoff', 'Ravel', 'Schubert', 'Schumann', 'Scriabin']
-    composer_name_list = ['Bach', 'Balakirev', 'Beethoven', 'Brahms', 'Chopin', 'Debussy', 'Glinka', 'Haydn',
-                          'Liszt', 'Mozart', 'Prokofiev', 'Rachmaninoff', 'Ravel', 'Schubert', 'Schumann', 'Scriabin',
-                          'Bartok', 'Clementi', 'Kuhlau', 'Mendelsshon', 'Tchaikovsky', 'Scarlatti', 'Mompou']
+    composer_name_list = ['Bach','Balakirev', 'Beethoven', 'Brahms', 'Chopin', 'Debussy', 'Glinka', 'Haydn',
+                          'Liszt', 'Mozart', 'Prokofiev', 'Rachmaninoff', 'Ravel', 'Schubert', 'Schumann', 'Scriabin']
+    #composer_name_list = ['Bach', 'Balakirev', 'Beethoven', 'Brahms', 'Chopin', 'Debussy', 'Glinka', 'Haydn',
+    #                      'Liszt', 'Mozart', 'Prokofiev', 'Rachmaninoff', 'Ravel', 'Schubert', 'Schumann', 'Scriabin',
+    #                      'Bartok', 'Clementi', 'Kuhlau', 'Mendelsshon', 'Tchaikovsky', 'Scarlatti', 'Mompou']
     one_hot_vec = [0] * (len(composer_name_list)  + 1)
     if composer_name in composer_name_list:
         index = composer_name_list.index(composer_name)
