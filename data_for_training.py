@@ -6,6 +6,7 @@ from . import dataset_split
 from .constants import NORM_FEAT_KEYS, VNET_COPY_DATA_KEYS, VNET_INPUT_KEYS, VNET_OUTPUT_KEYS
 from pathlib import Path
 from tqdm import tqdm
+import shutil
 
 class ScorePerformPairData:
     def __init__(self, piece, perform):
@@ -96,6 +97,12 @@ class PairDataset:
             
                 with open(save_folder / pair_data.split_type / save_name, "wb") as f:
                     pickle.dump(formatted_data, f, protocol=2)
+                
+                if pair_data.split_type == 'test':
+                    xml_name = Path(pair_data.piece_path).name
+                    xml_path = Path(save_folder).joinpath(pair_data.split_type, xml_name)
+                    shutil.copy(pair_data.piece_path, str(xml_path))
+
             except:
                 print('Error: No Features with {}'.format(pair_data.perform_path))
 
