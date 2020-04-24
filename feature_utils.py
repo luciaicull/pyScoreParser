@@ -328,7 +328,7 @@ def composer_name_to_vec(composer_name):
 
 
 def get_longer_level_dynamics(features, note_locations, length='beat'):
-    num_notes = len(note_locations)
+    num_notes = len(note_locations['data'])
 
     prev_beat = 0
     prev_beat_index = 0
@@ -337,9 +337,9 @@ def get_longer_level_dynamics(features, note_locations, length='beat'):
     longer_dynamics = [0] * num_notes
 
     for i in range(num_notes):
-        if not features['align_matched'][i]:
+        if not features['align_matched']['data'][i]:
             continue
-        current_beat = getattr(note_locations[i], length)
+        current_beat = getattr(note_locations['data'][i], length)
 
         if current_beat > prev_beat and temp_beat_dynamic != []:
             prev_beat_dynamic = (sum(temp_beat_dynamic) / len(temp_beat_dynamic) + max(temp_beat_dynamic)) / 2
@@ -349,7 +349,7 @@ def get_longer_level_dynamics(features, note_locations, length='beat'):
             prev_beat = current_beat
             prev_beat_index = i
 
-        temp_beat_dynamic.append(features['velocity'][i])
+        temp_beat_dynamic.append(features['velocity']['data'][i])
 
     if temp_beat_dynamic != []:
         prev_beat_dynamic = (sum(temp_beat_dynamic) + max(temp_beat_dynamic)) / 2 / len(temp_beat_dynamic)
