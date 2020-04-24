@@ -27,21 +27,25 @@ class PairDataset:
             for performance in piece.performances:
                 self.data_pairs.append(ScorePerformPairData(piece, performance))
 
-    def get_squeezed_features(self, target_feat_keys):
+    def get_squeezed_features(self):
         squeezed_values = dict()
-        for feat_type in target_feat_keys:
-            squeezed_values[feat_type] = []
         for pair in self.data_pairs:
-            for feat_type in target_feat_keys:
-                if isinstance(pair.features[feat_type], list):
-                    squeezed_values[feat_type] += pair.features[feat_type]
-                else:
-                    squeezed_values[feat_type].append(pair.features[feat_type])
+            for feature_key in pair.features.keys():
+                if type(pair.features[feature_key]) is dict:
+                    if pair.features[feature_key]['need_normalize']:
+                        if isinstance(pair.features[feature_key]['data'], list):
+                            if feature_key not in squeezed_values.keys():
+                                squeezed_values[feature_key] = []
+                            squeezed_values[feature_key] += pair.features[feature_key]['data']
+                        else:
+                            if feature_key not in squeezed_values.keys():
+                                squeezed_values[feature_key] = []
+                            squeezed_values[feature_key].append(pair.features[feature_key]['data'])
         return squeezed_values
 
-    def update_mean_stds_of_entire_dataset(self, target_feat_keys=NORM_FEAT_KEYS):
-        squeezed_values = self.get_squeezed_features(target_feat_keys)
-        self.feature_stats = cal_mean_stds(squeezed_values, target_feat_keys)
+    def update_mean_stds_of_entire_dataset(self):
+        squeezed_values = self.get_squeezed_features()
+        self.feature_stats = cal_mean_stds(squeezed_values)
 
     def update_dataset_split_type(self, valid_set_list=dataset_split.VALID_LIST, test_set_list=dataset_split.TEST_LIST):
         # TODO: the split
@@ -159,20 +163,20 @@ def cal_mean_stds_of_entire_dataset(dataset, target_features):
                 else:
                     print('Selected feature {} is not in the data'.format(feat_type))
 
-    stats = cal_mean_stds(output_values, target_features)
+    stats = cal_mean_stds(output_values)
 
     return stats
 
 
-def cal_mean_stds(feat_datas, target_features):
+def cal_mean_stds(feat_datas):
     stats = dict()
-    for feat_type in target_features:
-        mean = sum(feat_datas[feat_type]) / len(feat_datas[feat_type])
-        var = sum((x-mean)**2 for x in feat_datas[feat_type]) / len(feat_datas[feat_type])
+    for feature_key in feat_datas.keys():
+        mean = sum(feat_datas[feature_key]) / len(feat_datas[feature_key])
+        var = sum((x-mean)**2 for x in feat_datas[feature_key]) / len(feat_datas[feature_key])
         stds = var ** 0.5
         if stds == 0:
             stds = 1
-        stats[feat_type] = {'mean': mean, 'stds':stds}
+        stats[feature_key] = {'mean': mean, 'stds': stds}
     return stats
 
 
@@ -181,7 +185,7 @@ def convert_feature_to_VirtuosoNet_format(feature_data, stats, input_keys=VNET_I
     output_data = []
 
     def check_if_global_and_normalize(key):
-        value = feature_data[key]
+        value = feature_data[key]['data']
         if not isinstance(value, list) or len(value) != feature_data['num_notes']:  # global features like qpm_primo, tempo_primo, composer_vec
             value = [value] * feature_data['num_notes']
         if key in stats:  # if key needs normalization,
