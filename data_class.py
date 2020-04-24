@@ -137,7 +137,7 @@ class DataSet:
         feature_data = [[] for i in range(len(list_of_feat))]
         for perf in self.performances:
             for i, feature_type in enumerate(list_of_feat):
-                feature_data[i].append(perf.perform_features[feature_type])
+                feature_data[i].append(perf.perform_features[feature_type]['data'])
         return feature_data
 
     def get_average_by_perform(self, feature_data):
@@ -155,6 +155,7 @@ class DataSet:
     #     # axis 0: performance, axis 1: feature, axis 2: note
     #     for data_by_perf in feature_data:
 
+    # TODO : not refactored
     def get_average_feature_by_measure(self, list_of_features):
         measure_average_features = [[] for i in range(len(list_of_features))]
         for p_index, perf in enumerate(self.performances):
@@ -301,9 +302,7 @@ class PieceData:
         for perform in self.performances:
             try:
                 print('Performance:', perform.midi_path)
-                for feature_name in target_features:
-                    perform.perform_features[feature_name] = getattr(
-                        perform_extractor, 'get_' + feature_name)(self, perform)
+                perform.perform_features = perform_extractor.extract_perform_features(self, perform)
             except:
                 print('Performance was not aligned: pass')
 
