@@ -14,6 +14,7 @@ DEFAULT_PERFORM_FEATURES = ['beat_tempo', 'velocity', 'onset_deviation', 'articu
                             'pedal_refresh', 'pedal_cut', 'qpm_primo', 'align_matched', 'articulation_loss_weight',
                             'beat_dynamics', 'measure_tempo', 'measure_dynamics']
 
+# TODO: now unused
 NORM_FEAT_KEYS = ('midi_pitch', 'duration', 'beat_importance', 'measure_length', 'qpm_primo',
                   'following_rest', 'distance_from_abs_dynamic', 'distance_from_recent_tempo',
                   'beat_tempo', 'velocity', 'onset_deviation', 'articulation', 'pedal_refresh_time',
@@ -29,7 +30,15 @@ VNET_INPUT_KEYS = ('midi_pitch', 'duration', 'beat_importance', 'measure_length'
                    'followed_by_fermata_rest', 'pitch', 'tempo', 'dynamic', 'time_sig_vec',
                    'slur_beam_vec',  'composer_vec', 'notation', 'tempo_primo')
 
+'''
+# revise trill_parameters
 VNET_OUTPUT_KEYS = ('beat_tempo', 'velocity', 'onset_deviation', 'articulation', 'pedal_refresh_time',
                     'pedal_cut_time', 'pedal_at_start', 'pedal_at_end', 'soft_pedal',
-                    'pedal_refresh', 'pedal_cut', 'qpm_primo', 'beat_tempo', 'beat_dynamics',
-                    'measure_tempo', 'measure_dynamics')
+                    'pedal_refresh', 'pedal_cut', 'beat_tempo', 'beat_dynamics',
+                    'measure_tempo', 'measure_dynamics', 'trill_parameters')
+'''
+VNET_OUTPUT_KEYS = ('beat_tempo', 'velocity', 'onset_deviation', 'articulation', 'pedal_refresh_time',
+                    'pedal_cut_time', 'pedal_at_start', 'pedal_at_end', 'soft_pedal',
+                    'pedal_refresh', 'pedal_cut', 'beat_tempo', 'beat_dynamics',
+                    'measure_tempo', 'measure_dynamics', 'num_trills', 'trill_last_note_velocity', 
+                    'trill_first_note_ratio', 'trill_last_note_ratio', 'up_trill')
