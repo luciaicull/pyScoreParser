@@ -212,6 +212,17 @@ class PerformExtractor:
                 perform_data.perform_features[feature_key]['need_normalize'] = need_normalize
 
         return perform_data.perform_features
+    
+    def get_emotion(self, piece_data, perform_data):
+        emotion_vector = [0, 0, 0, 0, 0] # [origin, relaxed, sad, happy, angry]
+        emotion_num = perform_data.emotion
+        try:
+            emotion_vector[emotion_num-1] = 1
+        except Exception as e:
+            print("No emotion")
+            print(e)
+        
+        return emotion_vector, False
 
     def get_beat_tempo(self, piece_data, perform_data):
         tempos = feature_utils.cal_tempo_by_positions(piece_data.beat_positions, perform_data.valid_position_pairs)

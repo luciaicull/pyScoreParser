@@ -3,7 +3,7 @@ import random
 import numpy as np
 import pickle
 from . import dataset_split
-from .constants import NORM_FEAT_KEYS, VNET_COPY_DATA_KEYS, VNET_INPUT_KEYS, VNET_OUTPUT_KEYS
+from .constants import VNET_COPY_DATA_KEYS, VNET_INPUT_KEYS, VNET_OUTPUT_KEYS
 from pathlib import Path
 from tqdm import tqdm
 import shutil

@@ -385,6 +385,8 @@ class PerformData:
         self.num_unmatched_notes = 0
         self.tempos = []
 
+        self.emotion = self._get_emotion(midi_path)
+
     def __str__(self):
         return str(self.__dict__)
 
@@ -398,6 +400,17 @@ class PerformData:
                 self.num_matched_notes += 1
         print(
             'Number of Final Matched Notes: ' + str(self.num_matched_notes) + ', unmatched notes: ' + str(self.num_unmatched_notes))
+
+    def _get_emotion(self, midi_path):
+        midi_name = Path(midi_path).name
+        emotion_list = ['.E1.', '.E2.', '.E3.', '.E4.', '.E5.']
+        emotion = None
+        for i, e in enumerate(emotion_list):
+            if e in midi_name:
+                emotion = i+1
+                break
+        
+        return emotion
 
 
 class ScoreData:
